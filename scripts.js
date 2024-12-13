@@ -4,7 +4,12 @@ function getJob() {
         const vaga = document.querySelectorAll('.t-24.job-details-jobs-unified-top-card__job-title > h1:first-child')[0].innerText;
 
         // TIPO DE VAGA (REMOTO PRESENCIAL E TAL...)
-        const tipoVaga = document.querySelectorAll('.ui-label.ui-label--accent-3.text-body-small > span:first-child')[0].innerText;
+        let tipoVaga = ""
+        try {
+            tipoVaga = document.querySelectorAll('.ui-label.ui-label--accent-3.text-body-small > span:first-child')[0].innerText;
+        } catch {
+            tipoVaga = "Presencial"
+        }
 
         let cidade = '';
         let estado = '';
@@ -13,7 +18,7 @@ function getJob() {
             const localizacao = document.querySelectorAll('.t-black--light.mt2 > span:first-child')[0].innerText;
             const localizacaoSeparada = localizacao.split(',');
             cidade = localizacaoSeparada[0];
-            estado = localizacaoSeparada[1];
+            estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
         }
 
         // EMPRESA
@@ -36,10 +41,37 @@ function getJob() {
         return { vaga, tipoVaga, cidade, estado, empresa };
     };
 
+    const getTelegramJornada = () => {
+        // DESCRIÇÃO VAGA 
+        const bodyIframe = document.getElementsByTagName('iframe')[0].contentWindow.document.body;
+        console.log(bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i'))
+        const vaga = bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i')[3].innerHTML.replaceAll(": ", "");
+
+        // EMPRESA
+        const empresa = bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i')[5].innerHTML.replaceAll(": ", "");
+
+        let cidade = bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i')[7].innerHTML.replaceAll(": ", "").trim();
+        let tipoVaga = '';
+        let estado = '';
+        if (cidade == 'Remoto') {
+            tipoVaga = "Remoto"
+            cidade = "";
+        } else {
+            tipoVaga = 'Presencial/Híbrido';
+            const localizacaoSeparada = cidade.split(',');
+            cidade = localizacaoSeparada[0];
+            estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
+        } 
+
+        return { vaga, tipoVaga, cidade, estado, empresa, };
+    };
+
     const linkPagina = window.location.href;
     let retorno = {};
     if (linkPagina.includes("linkedin.com")) {
         retorno = getLinkedin();
+    } else if (linkPagina.includes("t.me/jornadati")) {
+        retorno = getTelegramJornada();
     } else {
         retorno = getRemotar();
     }
@@ -47,9 +79,10 @@ function getJob() {
     return retorno;
 };
 
-function showJob(retorno) {
-    console.log(retorno);
+let retornoVaga = {};
 
+function showJob(retorno) {
+    retornoVaga = retorno;
     const textoParaOTelegram = `Titulo: ${retorno.vaga}
 Empresa: ${retorno.empresa}
 Local: ${retorno.tipoVaga} ${retorno.cidade} ${retorno.estado}
@@ -61,12 +94,11 @@ Link para a vaga ${retorno.linkPagina}`;
     txtTelegram.classList.add("show");
     txtTelegram.value = textoParaOTelegram;
 
-    const textoParaPlanilha = `\n\n\n${retorno.vaga}\t\t${retorno.cidade}\t${retorno.estado}\t${retorno.empresa}\n\n`
+    const btnSendTelegram = document.getElementById("btnSendTelegram");
+    btnSendTelegram.classList.remove("hidden");
+    btnSendTelegram.classList.add("show");
 
-    const txtPlanilha = document.getElementById("txtPlanilha");
-    txtPlanilha.classList.remove("hidden");
-    txtPlanilha.classList.add("show");
-    txtPlanilha.value = textoParaPlanilha;
+    mostrarParaPostarNaPlanilha('')
 }
 
 document.getElementById("getJob").addEventListener("click", () => {
@@ -75,7 +107,49 @@ document.getElementById("getJob").addEventListener("click", () => {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: getJob,
-            //        files: ['contentScript.js'],  // To call external file instead
         }).then((textos) => showJob(textos[0].result));
     });
 });
+
+document.getElementById("btnSendTelegram").addEventListener("click",  () => {
+    const txtTelegram = document.getElementById("txtTelegram").value;
+
+    const BOT_TOKEN = ENV.BOT_TOKEN;
+    const CHAT_ID =  ENV.CHAT_ID;
+    const TOPIC = ENV.TOPIC;
+
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+    const data = {
+        chat_id: CHAT_ID,
+        message_thread_id: TOPIC, 
+        text: txtTelegram,
+    };
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Message sent successfully:', data);
+        const message_thread_id = data.result.message_thread_id;
+        const message_id = data.result.message_id;
+        const urlTelegram = `https://t.me/jornadati/${message_thread_id}/${message_id}`;
+        
+        mostrarParaPostarNaPlanilha(urlTelegram);
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+    });
+});
+
+function mostrarParaPostarNaPlanilha(url){
+    const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
+    const txtPlanilha = document.getElementById("txtPlanilha");
+    txtPlanilha.classList.remove("hidden");
+    txtPlanilha.classList.add("show");
+    txtPlanilha.value = textoParaPlanilha;
+}
