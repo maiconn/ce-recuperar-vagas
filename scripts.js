@@ -1,19 +1,31 @@
+function show(id) {
+    const componente = document.getElementById(id);
+    componente.classList.remove("hidden");
+    componente.classList.add("show");
+}
+
+function hide(id) {
+    const componente = document.getElementById(id);
+    componente.classList.remove("show");
+    componente.classList.add("hidden");
+}
+
 function getJob() {
     const getLinkedin = () => {
         // DESCRIÇÃO VAGA 
         const vaga = document.querySelectorAll('.t-24.job-details-jobs-unified-top-card__job-title > h1:first-child')[0].innerText;
 
-        // TIPO DE VAGA (REMOTO PRESENCIAL E TAL...)
-        let tipoVaga = ""
+        // TIPO DE TRABALHO (REMOTO PRESENCIAL E TAL...)
+        let tipoTrabalho = ""
         try {
-            tipoVaga = document.querySelectorAll('.ui-label.ui-label--accent-3.text-body-small > span:first-child')[0].innerText;
+            tipoTrabalho = document.querySelectorAll('.ui-label.ui-label--accent-3.text-body-small > span:first-child')[0].innerText;
         } catch {
-            tipoVaga = "Presencial"
+            tipoTrabalho = "Presencial"
         }
 
         let cidade = '';
         let estado = '';
-        if (tipoVaga != 'Remoto') {
+        if (tipoTrabalho != 'Remoto') {
             // LOCALIZAÇÃO
             const localizacao = document.querySelectorAll('.t-black--light.mt2 > span:first-child')[0].innerText;
             const localizacaoSeparada = localizacao.split(',');
@@ -24,7 +36,7 @@ function getJob() {
         // EMPRESA
         const empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name > a:first-child')[0].innerText;
 
-        return { vaga, tipoVaga, cidade, estado, empresa };
+        return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
 
     const getRemotar = () => {
@@ -34,11 +46,11 @@ function getJob() {
         // EMPRESA
         const empresa = document.querySelectorAll('.css-1bjnam8 > a > p')[0].innerText;
 
-        const tipoVaga = "Remoto";
+        const tipoTrabalho = "Remoto";
         const cidade = '';
         const estado = '';
 
-        return { vaga, tipoVaga, cidade, estado, empresa };
+        return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
 
     const getTelegramJornada = () => {
@@ -51,65 +63,60 @@ function getJob() {
         const empresa = bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i')[5].innerHTML.replaceAll(": ", "");
 
         let cidade = bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i')[7].innerHTML.replaceAll(": ", "").trim();
-        let tipoVaga = '';
+        let tipoTrabalho = '';
         let estado = '';
         if (cidade == 'Remoto') {
-            tipoVaga = "Remoto"
+            tipoTrabalho = "Remoto"
             cidade = "";
         } else {
-            tipoVaga = 'Presencial/H�brido';
+            tipoTrabalho = 'Presencial/H�brido';
             const localizacaoSeparada = cidade.split(',');
             cidade = localizacaoSeparada[0];
             estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
         } 
 
-        return { vaga, tipoVaga, cidade, estado, empresa, };
+        return { vaga, tipoTrabalho, cidade, estado, empresa, };
+    };
+
+    const getEmpty = () => {
+        const vaga = '';
+        const tipoTrabalho = '';
+        const cidade = '';
+        const estado = '';
+        const empresa = '';
+        const tipoVaga = '';
+               
+        return { vaga, tipoTrabalho, cidade, estado, empresa, tipoVaga };
     };
 
     const linkPagina = window.location.href;
-    let retorno = {};
+    let retorno = getEmpty();
     if (linkPagina.includes("linkedin.com")) {
         retorno = getLinkedin();
     } else if (linkPagina.includes("t.me/jornadati")) {
         retorno = getTelegramJornada();
-    } else {
+    } else if (linkPagina.includes("remotar.com.br")) {
         retorno = getRemotar();
-    }
+    } 
+
     retorno.linkPagina = linkPagina;
+    retorno.tipoVaga = '';
     return retorno;
 };
 
 let retornoVaga = {};
 
-function showJob(retorno) {
+function showJob(retorno, esconderMontar) {
     retornoVaga = retorno;
-    const textoParaOTelegram = `Titulo: ${retorno.vaga}
-Empresa: ${retorno.empresa}
-Local: ${retorno.tipoVaga} ${retorno.cidade} ${retorno.estado}
-
-Link para a vaga ${retorno.linkPagina}`;
-
-    const txtTelegram = document.getElementById("txtTelegram");
-    txtTelegram.classList.remove("hidden");
-    txtTelegram.classList.add("show");
-    txtTelegram.value = textoParaOTelegram;
-
-    const btnSendTelegram = document.getElementById("btnSendTelegram");
-    btnSendTelegram.classList.remove("hidden");
-    btnSendTelegram.classList.add("show");
-
-    mostrarParaPostarNaPlanilha('')
+    if (retorno.vaga == '') {
+        show('camposMontarJob');
+    } else if (retornoVaga.tipoVaga != '') {
+        prepararParaPostarTelegram();
+        if (esconderMontar) {
+            hide('camposMontarJob');
+        }
+    }
 }
-
-document.getElementById("getJob").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tab = tabs[0];  
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: getJob,
-        }).then((textos) => showJob(textos[0].result));
-    });
-});
 
 document.getElementById("btnSendTelegram").addEventListener("click",  () => {
     const txtTelegram = document.getElementById("txtTelegram").value;
@@ -147,9 +154,59 @@ document.getElementById("btnSendTelegram").addEventListener("click",  () => {
 });
 
 function mostrarParaPostarNaPlanilha(url){
-    const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
+    const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t${retornoVaga.tipoVaga}\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
     const txtPlanilha = document.getElementById("txtPlanilha");
-    txtPlanilha.classList.remove("hidden");
-    txtPlanilha.classList.add("show");
     txtPlanilha.value = textoParaPlanilha;
 }
+
+function prepararParaPostarTelegram() {
+    const textoParaOTelegram = `Titulo: ${retornoVaga.vaga}
+Empresa: ${retornoVaga.empresa}
+Local: ${retornoVaga.tipoTrabalho} ${retornoVaga.cidade} ${retornoVaga.estado}
+Tipo De Vaga: ${retornoVaga.tipoVaga}
+
+Link para a vaga ${retornoVaga.linkPagina}`;
+
+    const txtTelegram = document.getElementById("txtTelegram");
+    txtTelegram.value = textoParaOTelegram;
+    
+    show('dadosEnviar');
+
+    mostrarParaPostarNaPlanilha('');
+}
+
+document.getElementById("txtPlanilha").addEventListener("click",  () => {
+    navigator.clipboard.writeText(document.getElementById("txtPlanilha").value)
+    .then(() => alert("Texto copiado com sucesso!"))
+    .catch((err) => console.error("Erro ao copiar texto: ", err));
+});
+
+document.getElementById("btnMontarJob").addEventListener("click",  () => {
+    const tipoVaga = document.getElementById("tipoVaga").value;
+    const vaga = document.getElementById("txtTitulo").value;
+    const tipoTrabalho = document.getElementById("tipoTrabalho").value;
+    const cidade = document.getElementById("txtCidade").value;
+    let estado = cidade == '' ? '' : document.getElementById("txtEstado").value;
+    const empresa = document.getElementById("txtEmpresa").value;
+    const linkPagina = document.getElementById("txtLink").value;
+
+    const retorno = { vaga, tipoTrabalho, cidade, estado, empresa, linkPagina, tipoVaga };
+    showJob(retorno, false);
+});
+
+document.getElementById('tipoVaga').addEventListener('change', function(event) {
+    const selectedValue = event.target.value;
+    retornoVaga.tipoVaga = selectedValue;
+    showJob(retornoVaga, false);
+});
+
+window.onload = function() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tab = tabs[0];  
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: getJob,
+        }).then((textos) => showJob(textos[0].result, true));
+    });
+};
+

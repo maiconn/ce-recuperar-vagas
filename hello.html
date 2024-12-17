@@ -4,10 +4,74 @@
 </head>
 <body>
     <h1>GET WORK EXTENSION</h1>
-    <button id="getJob">GET JOB</button>
-    <textarea id="txtTelegram" rows="7" class="hidden"></textarea>
-    <button id="btnSendTelegram" class="hidden">Mandar Telegram</button>
-    <input type="text" id="txtPlanilha" class="hidden" />
+
+   
+
+    <div id="camposMontarJob" class="hidden">
+        <label for="txtTitulo">Titulo</label>
+        <input type="text" id="txtTitulo"  />
+        <label for="txtEmpresa">Empresa</label>
+        <input type="text" id="txtEmpresa"  />
+        <label for="tipoTrabalho">Tipo Trabalho</label><br>
+        <select name="tipoTrabalho" id="tipoTrabalho" rows="7" >
+            <option value="Remoto">REMOTO</option>
+            <option value="Híbrido">HÍBRIDO</option>
+            <option value="Presencial">PRESENCIAL</option>
+        </select><br>
+        <label for="txtCidade">Cidade</label>
+        <input type="text" id="txtCidade"  />
+        <label for="txtEstado">Estado</label><br>
+        <select name="txtEstado" id="txtEstado" rows="7" >
+            <option value="AC">Acre (AC)</option>
+            <option value="AL">Alagoas (AL)</option>
+            <option value="AP">Amapá (AP)</option>
+            <option value="AM">Amazonas (AM)</option>
+            <option value="BA">Bahia (BA)</option>
+            <option value="CE">Ceará (CE)</option>
+            <option value="DF">Distrito Federal (DF)</option>
+            <option value="ES">Espírito Santo (ES)</option>
+            <option value="GO">Goiás (GO)</option>
+            <option value="MA">Maranhão (MA)</option>
+            <option value="MT">Mato Grosso (MT)</option>
+            <option value="MS">Mato Grosso do Sul (MS)</option>
+            <option value="MG">Minas Gerais (MG)</option>
+            <option value="PA">Pará (PA)</option>
+            <option value="PB">Paraíba (PB)</option>
+            <option value="PR">Paraná (PR)</option>
+            <option value="PE">Pernambuco (PE)</option>
+            <option value="PI">Piauí (PI)</option>
+            <option value="RJ">Rio de Janeiro (RJ)</option>
+            <option value="RN">Rio Grande do Norte (RN)</option>
+            <option value="RS">Rio Grande do Sul (RS)</option>
+            <option value="RO">Rondônia (RO)</option>
+            <option value="RR">Roraima (RR)</option>
+            <option value="SC">Santa Catarina (SC)</option>
+            <option value="SP">São Paulo (SP)</option>
+            <option value="SE">Sergipe (SE)</option>
+            <option value="TO">Tocantins (TO)</option>
+          </select><br>
+        <label for="txtLink">Link</label>
+        <input type="text" id="txtLink" />
+        <button id="btnMontarJob">Montar JOB</button>
+    </div>
+
+    <label for="tipoVaga">Tipo Vaga</label><br>
+    <select name="tipoVaga" id="tipoVaga" rows="7">
+        <option value="">SELECIONE</option>
+        <option value="Junior">Junior</option>
+        <option value="Estágio">Estágio</option>
+        <option value="Suporte">Suporte</option>
+        <option value="Teste">Teste</option>
+        <option value="Trainee">Trainee</option>
+        <option value="Programa de Estágio">Programa de Estágio</option>
+    </select><br>
+
+    <div id="dadosEnviar" class="hidden">
+        <textarea id="txtTelegram" rows="7"></textarea>
+        <button id="btnSendTelegram">Mandar Telegram</button>
+        <input type="text" id="txtPlanilha" />
+    </div>
+    
 
     <script src="config.js"></script>
     <script src="scripts.js"></script>
