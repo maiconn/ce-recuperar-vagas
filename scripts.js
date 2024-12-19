@@ -73,7 +73,7 @@ function getJob() {
             const localizacaoSeparada = cidade.split(',');
             cidade = localizacaoSeparada[0];
             estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
-        } 
+        }
 
         return { vaga, tipoTrabalho, cidade, estado, empresa, };
     };
@@ -85,7 +85,7 @@ function getJob() {
         const estado = '';
         const empresa = '';
         const tipoVaga = '';
-               
+
         return { vaga, tipoTrabalho, cidade, estado, empresa, tipoVaga };
     };
 
@@ -97,7 +97,7 @@ function getJob() {
         retorno = getTelegramJornada();
     } else if (linkPagina.includes("remotar.com.br")) {
         retorno = getRemotar();
-    } 
+    }
 
     retorno.linkPagina = linkPagina;
     retorno.tipoVaga = '';
@@ -118,17 +118,17 @@ function showJob(retorno, esconderMontar) {
     }
 }
 
-document.getElementById("btnSendTelegram").addEventListener("click",  () => {
+document.getElementById("btnSendTelegram").addEventListener("click", () => {
     const txtTelegram = document.getElementById("txtTelegram").value;
 
     const BOT_TOKEN = ENV.BOT_TOKEN;
-    const CHAT_ID =  ENV.CHAT_ID;
+    const CHAT_ID = ENV.CHAT_ID;
     const TOPIC = ENV.TOPIC;
 
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     const data = {
         chat_id: CHAT_ID,
-        message_thread_id: TOPIC, 
+        message_thread_id: TOPIC,
         text: txtTelegram,
     };
 
@@ -139,21 +139,22 @@ document.getElementById("btnSendTelegram").addEventListener("click",  () => {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Message sent successfully:', data);
-        const message_thread_id = data.result.message_thread_id;
-        const message_id = data.result.message_id;
-        const urlTelegram = `https://t.me/jornadati/${message_thread_id}/${message_id}`;
-        
-        mostrarParaPostarNaPlanilha(urlTelegram);
-    })
-    .catch(error => {
-        console.error('Error sending message:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            console.log('Message sent successfully:', data);
+            const message_thread_id = data.result.message_thread_id;
+            const message_id = data.result.message_id;
+            const urlTelegram = `https://t.me/jornadati/${message_thread_id}/${message_id}`;
+
+            mostrarParaPostarNaPlanilha(urlTelegram);
+            showSnackbar("Mensagem enviada com sucesso ao Telegram!", 2000);
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+        });
 });
 
-function mostrarParaPostarNaPlanilha(url){
+function mostrarParaPostarNaPlanilha(url) {
     const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t${retornoVaga.tipoVaga}\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
     const txtPlanilha = document.getElementById("txtPlanilha");
     txtPlanilha.value = textoParaPlanilha;
@@ -169,24 +170,24 @@ Link para a vaga ${retornoVaga.linkPagina}`;
 
     const txtTelegram = document.getElementById("txtTelegram");
     txtTelegram.value = textoParaOTelegram;
-    
+
     show('dadosEnviar');
 
-    mostrarParaPostarNaPlanilha('');
+    mostrarParaPostarNaPlanilha(retornoVaga.linkPagina);
 }
 
-document.getElementById("txtPlanilha").addEventListener("click",  () => {
+document.getElementById("txtPlanilha").addEventListener("click", () => {
     navigator.clipboard.writeText(document.getElementById("txtPlanilha").value)
-    .then(() => alert("Texto copiado com sucesso!"))
-    .catch((err) => console.error("Erro ao copiar texto: ", err));
+        .then(() => showSnackbar("Texto copiado com sucesso!", 1000))
+        .catch((err) => console.error("Erro ao copiar texto: ", err));
 });
 
-document.getElementById("btnMontarJob").addEventListener("click",  () => {
+document.getElementById("btnMontarJob").addEventListener("click", () => {
     const tipoVaga = document.getElementById("tipoVaga").value;
     const vaga = document.getElementById("txtTitulo").value;
     const tipoTrabalho = document.getElementById("tipoTrabalho").value;
-    const cidade = document.getElementById("txtCidade").value;
-    let estado = cidade == '' ? '' : document.getElementById("txtEstado").value;
+    const cidade = document.getElementById("cidade").value;
+    let estado = cidade == '' ? '' : document.getElementById("estado").value;
     const empresa = document.getElementById("txtEmpresa").value;
     const linkPagina = document.getElementById("txtLink").value;
 
@@ -194,15 +195,69 @@ document.getElementById("btnMontarJob").addEventListener("click",  () => {
     showJob(retorno, false);
 });
 
-document.getElementById('tipoVaga').addEventListener('change', function(event) {
+document.getElementById('tipoVaga').addEventListener('change', function (event) {
     const selectedValue = event.target.value;
     retornoVaga.tipoVaga = selectedValue;
     showJob(retornoVaga, false);
 });
 
-window.onload = function() {
+async function fetchEstados() {
+    try {
+        const estadoSelect = document.getElementById('estado');
+        const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados');
+        const estados = await response.json();
+        estados.sort((a, b) => a.nome.localeCompare(b.nome)); // Ordena por nome
+
+        estados.forEach(estado => {
+            const option = document.createElement('option');
+            option.value = estado.sigla;
+            option.textContent = estado.nome;
+            estadoSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao buscar estados:', error);
+    }
+}
+
+// Função para buscar cidades de um estado
+async function fetchCidades(estadoSigla) {
+    try {
+
+        const cidadeSelect = document.getElementById('cidade');
+        const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoSigla}/municipios`);
+        const cidades = await response.json();
+        cidades.sort((a, b) => a.nome.localeCompare(b.nome)); // Ordena por nome
+
+        cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>'; // Reseta as opções
+
+        cidades.forEach(cidade => {
+            const option = document.createElement('option');
+            option.value = cidade.nome;
+            option.textContent = cidade.nome;
+            cidadeSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao buscar cidades:', error);
+    }
+}
+
+document.getElementById('estado').addEventListener('change', () => {
+    const cidadeSelect = document.getElementById('cidade');
+    const estadoSelect = document.getElementById('estado');
+    const estadoSigla = estadoSelect.value;
+    if (estadoSigla) {
+        fetchCidades(estadoSigla);
+    } else {
+        cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>';
+    }
+});
+
+window.onload = function () {
+    // Carrega os estados ao carregar a página
+    fetchEstados();
+
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tab = tabs[0];  
+        const tab = tabs[0];
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: getJob,
@@ -210,3 +265,14 @@ window.onload = function() {
     });
 };
 
+function showSnackbar(texto, tempoEmMilissegundos) {
+    // Get the snackbar DIV
+    const snackbar = document.getElementById("snackbar");
+    snackbar.innerHTML = texto;
+  
+    // Add the "show" class to DIV
+    snackbar.className = "show";
+  
+    // After 3 seconds, remove the show class from DIV
+    setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, tempoEmMilissegundos);
+  }
