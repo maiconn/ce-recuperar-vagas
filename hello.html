@@ -1,19 +1,19 @@
 <html>
+
 <head>
     <link rel="stylesheet" type="text/css" href="estilos.css">
 </head>
+
 <body>
     <h1>GET WORK EXTENSION</h1>
 
-   
-
     <div id="camposMontarJob" class="hidden">
         <label for="txtTitulo">Titulo</label>
-        <input type="text" id="txtTitulo"  />
+        <input type="text" id="txtTitulo" />
         <label for="txtEmpresa">Empresa</label>
-        <input type="text" id="txtEmpresa"  />
+        <input type="text" id="txtEmpresa" />
         <label for="tipoTrabalho">Tipo Trabalho</label><br>
-        <select name="tipoTrabalho" id="tipoTrabalho" rows="7" >
+        <select name="tipoTrabalho" id="tipoTrabalho" rows="7">
             <option value="Remoto">REMOTO</option>
             <option value="Híbrido">HÍBRIDO</option>
             <option value="Presencial">PRESENCIAL</option>
@@ -24,12 +24,11 @@
             <option value="">Selecione um estado</option>
         </select><br>
 
-     
         <label for="cidade">Cidade</label><br>
         <select id="cidade" name="cidade">
             <option value="">Selecione uma cidade</option>
         </select><br>
-        
+
         <label for="txtLink">Link</label>
         <input type="text" id="txtLink" />
         <button id="btnMontarJob">Montar JOB</button>
@@ -55,7 +54,6 @@
 
     <!-- The actual snackbar -->
     <div id="snackbar"></div>
-    
 
     <script src="config.js"></script>
     <script src="scripts.js"></script>

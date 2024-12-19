@@ -10,6 +10,24 @@ function hide(id) {
     componente.classList.add("hidden");
 }
 
+function showSnackbar(texto, tempoEmMilissegundos) {
+    // Get the snackbar DIV
+    const snackbar = document.getElementById("snackbar");
+    snackbar.innerHTML = texto;
+  
+    // Add the "show" class to DIV
+    snackbar.className = "show";
+  
+    // After 3 seconds, remove the show class from DIV
+    setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, tempoEmMilissegundos);
+}
+
+function mostrarParaPostarNaPlanilha(url) {
+    const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t${retornoVaga.tipoVaga}\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
+    const txtPlanilha = document.getElementById("txtPlanilha");
+    txtPlanilha.value = textoParaPlanilha;
+}
+
 function getJob() {
     const getLinkedin = () => {
         // DESCRIÇÃO VAGA 
@@ -34,7 +52,13 @@ function getJob() {
         }
 
         // EMPRESA
-        const empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name > a:first-child')[0].innerText;
+        let empresa = '';
+        try{
+            empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name > a:first-child')[0].innerText;
+        } catch {
+            empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name')[0].innerText;
+        }
+        
 
         return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
@@ -154,11 +178,7 @@ document.getElementById("btnSendTelegram").addEventListener("click", () => {
         });
 });
 
-function mostrarParaPostarNaPlanilha(url) {
-    const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t${retornoVaga.tipoVaga}\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
-    const txtPlanilha = document.getElementById("txtPlanilha");
-    txtPlanilha.value = textoParaPlanilha;
-}
+
 
 function prepararParaPostarTelegram() {
     const textoParaOTelegram = `Titulo: ${retornoVaga.vaga}
@@ -264,15 +284,3 @@ window.onload = function () {
         }).then((textos) => showJob(textos[0].result, true));
     });
 };
-
-function showSnackbar(texto, tempoEmMilissegundos) {
-    // Get the snackbar DIV
-    const snackbar = document.getElementById("snackbar");
-    snackbar.innerHTML = texto;
-  
-    // Add the "show" class to DIV
-    snackbar.className = "show";
-  
-    // After 3 seconds, remove the show class from DIV
-    setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, tempoEmMilissegundos);
-  }
