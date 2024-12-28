@@ -14,16 +14,16 @@ function showSnackbar(texto, tempoEmMilissegundos) {
     // Get the snackbar DIV
     const snackbar = document.getElementById("snackbar");
     snackbar.innerHTML = texto;
-  
+
     // Add the "show" class to DIV
     snackbar.className = "show";
-  
+
     // After 3 seconds, remove the show class from DIV
-    setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, tempoEmMilissegundos);
+    setTimeout(function () { snackbar.className = snackbar.className.replace("show", ""); }, tempoEmMilissegundos);
 }
 
-function mostrarParaPostarNaPlanilha(url) {
-    const textoParaPlanilha = `${url == '' ? '' : url + "\t"}${retornoVaga.vaga}\t${retornoVaga.tipoVaga}\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
+function mostrarParaPostarNaPlanilha() {
+    const textoParaPlanilha = `${retornoVaga.linkPagina == '' ? '' : retornoVaga.linkPagina + "\t"}${retornoVaga.vaga}\t${retornoVaga.tipoVaga}\t${retornoVaga.cidade}\t${retornoVaga.estado}\t${retornoVaga.empresa}\n\n`
     const txtPlanilha = document.getElementById("txtPlanilha");
     txtPlanilha.value = textoParaPlanilha;
 }
@@ -53,12 +53,12 @@ function getJob() {
 
         // EMPRESA
         let empresa = '';
-        try{
+        try {
             empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name > a:first-child')[0].innerText;
         } catch {
             empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name')[0].innerText;
         }
-        
+
 
         return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
@@ -169,13 +169,29 @@ document.getElementById("btnSendTelegram").addEventListener("click", () => {
             const message_thread_id = data.result.message_thread_id;
             const message_id = data.result.message_id;
             const urlTelegram = `https://t.me/jornadati/${message_thread_id}/${message_id}`;
-
-            mostrarParaPostarNaPlanilha(urlTelegram);
+            
+            retornoVaga.linkPagina = urlTelegram;
+            mostrarParaPostarNaPlanilha();
             showSnackbar("Mensagem enviada com sucesso ao Telegram!", 2000);
         })
         .catch(error => {
             console.error('Error sending message:', error);
         });
+});
+
+document.getElementById("btnEnviarNotion").addEventListener("click", () => {
+    fetch(`${ENV.NOTION_URL}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(retornoVaga),
+    })
+        .then(response => response.json())
+        .then(data => {
+            showSnackbar("Vaga enviada com sucesso ao Notion!", 2000);
+        })
+        .catch(err => console.error(err));
 });
 
 
@@ -193,7 +209,7 @@ Link para a vaga ${retornoVaga.linkPagina}`;
 
     show('dadosEnviar');
 
-    mostrarParaPostarNaPlanilha(retornoVaga.linkPagina);
+    mostrarParaPostarNaPlanilha();
 }
 
 document.getElementById("txtPlanilha").addEventListener("click", () => {
@@ -207,7 +223,7 @@ document.getElementById("btnMontarJob").addEventListener("click", () => {
     const vaga = document.getElementById("txtTitulo").value;
     const tipoTrabalho = document.getElementById("tipoTrabalho").value;
     const cidade = document.getElementById("cidade").value;
-    let estado = cidade == '' ? '' : document.getElementById("estado").value;
+    const estado = cidade == '' ? '' : document.getElementById("estado").value;
     const empresa = document.getElementById("txtEmpresa").value;
     const linkPagina = document.getElementById("txtLink").value;
 
