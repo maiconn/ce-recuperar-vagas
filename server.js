@@ -1,7 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const config = require("./config.js");
 const app = express();
+require("dotenv").config();
 
 // Middleware para processar JSON no body da requisição
 app.use(express.json());
@@ -12,6 +12,63 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
+
+async function enviarNewsletter() {
+    const url = `${process.env.URL_JORNADA}/buscar_emails.php`;
+  
+    try {
+      const resposta = await fetch(url);
+      const json = await resposta.json();
+  
+      if (!json.emails || json.emails.length === 0) {
+        console.log('Nenhum e-mail ativo encontrado.');
+        return;
+      }
+  
+      console.log(`Encontrados ${json.total} e-mails. Iniciando envio...`);
+
+      const htmlEnviar = await recuperarEmailNewsletterHtml();
+
+      const total = json.emails.length;
+      let processados = 0;
+  
+      for (const item of json.emails) {
+          //const retornoEnvio = await enviarEmailPorIdHostinger(item.id);
+        const htmlFinal = htmlEnviar.replace("{{EMAIL}}", item.email);
+        const retornoEnvio = await enviarEmailMicrosoft(item.email, htmlFinal);
+        item.retornoEnvio = retornoEnvio;
+
+        processados++;
+        const porcentagem = ((processados / total) * 100).toFixed(2);
+        console.log(`[(${processados}/${total})${porcentagem}%] Resultado do envio para ID ${item.id}:`, retornoEnvio);
+      }
+  
+      console.log('Processo de envio finalizado.');
+      return json;
+    } catch (erro) {
+      console.error('Erro ao buscar e-mails:', erro);
+    }
+}
+  
+async function recuperarEmailNewsletterHtml() {
+  const respostaTemplate = await fetch(`ver_vagas_dia_email.php`, {
+    method: 'GET',
+  });
+  return await respostaTemplate.text();
+}
+
+async function enviarEmailPorIdHostinger(id) {
+    try {
+      const resposta = await fetch(`${process.env.URL_JORNADA}/enviar_email_newsletter.php?id=${id}`, {
+        method: 'GET',
+      });
+  
+      const resultado = await resposta.json();
+      return resultado;
+    } catch (erro) {
+      console.error(`Erro ao enviar e-mail para ID ${id}:`, erro);
+    }
+}
 
 const estadosBrasil = {
     "Acre": "AC",
@@ -43,110 +100,109 @@ const estadosBrasil = {
     "Tocantins": "TO"
   };
   
-  const removerAcentos = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const removerAcentos = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   
-  const estadoParaSigla = (estado) => {
+const estadoParaSigla = (estado) => {
     if (estado === '' || estado.length === 2) {
         return estado;
     }
     const estadoSemAcentos = removerAcentos(estado).toLowerCase().trim();
     const resultado = Object.keys(estadosBrasil).find(
-      (nome) => removerAcentos(nome).toLowerCase() === estadoSemAcentos
+        (nome) => removerAcentos(nome).toLowerCase() === estadoSemAcentos
     );
-    return resultado ? estadosBrasil[resultado] : null; // Retorna null se não encontrar
-  };
+    return resultado ? estadosBrasil[resultado] : ''; // Retorna null se não encontrar
+};
 
 app.post('/notion-proxy', async (req, res) => {
     try {
-        // Acessa os dados enviados no body
-        const { vaga, tipoTrabalho, cidade, estado, empresa, linkPagina, tipoVaga } = req.body;
-        const DATABASE_ID = '10ee5040cf75802b96aedd44775018b0'; // Substitua pelo ID do banco de dados
-
-        
-        // Faz uma requisição POST para a API do Notion com os dados recebidos
-        const response = await fetch('https://api.notion.com/v1/pages', {
+        const novoObj = {...req.body};
+        novoObj.estado = estadoParaSigla(req.body.estado)
+        console.log(JSON.stringify(novoObj))
+        const responseJornada = await fetch(`${process.env.URL_JORNADA}/inserir_vagas.php`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${config.NOTION_TOKEN}`,
-                'Notion-Version': '2022-06-28',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                parent: {
-                    database_id: DATABASE_ID // Substitua pelo ID da sua base de dados
-                },
-                "properties": {
-                    "Cidade": {
-                        "type": "rich_text",
-                        "rich_text": [
-                            {
-                                "text": {
-                                    "content": cidade
-                                },
-                                "plain_text": cidade
-                            }
-                        ]
-                    },
-                    "Estado": {
-                        "type": "rich_text",
-                        "rich_text": [
-                            {
-                                "text": {
-                                    "content": estadoParaSigla(estado)
-                                },
-                                "plain_text": estadoParaSigla(estado)
-                            }
-                        ]
-                    },
-                    "Link de Acesso": {
-                        "type": "url",
-                        "url": linkPagina
-                    },
-                    "Tipo": {
-                        "type": "select",
-                        "select": {
-                            "name": tipoVaga
-                        }
-                    },
-                    "Data de Publicação": {
-                        "type": "date",
-                        "date": {
-                            "start": new Date().toISOString().split('T')[0]
-                        }
-                    },
-                    "Empresa": {
-                        "type": "rich_text",
-                        "rich_text": [
-                            {
-                                "text": {
-                                    "content": empresa
-                                },
-                                "plain_text": empresa
-                            }
-                        ]
-                    },
-                    "Descrição": {
-                        "type": "title",
-                        "title": [
-                            {
-                                "type": "text",
-                                "text": {
-                                    "content": vaga
-                                },
-                                "plain_text": vaga
-                            }
-                        ]
-                    }
-                }
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(novoObj),
         });
 
-        const data = await response.json();
-        res.json(data); // Retorna a resposta da API do Notion para o cliente
+        
+        const status = responseJornada.status; 
+        const dataJornada = await responseJornada.json(); 
+
+        if (!responseJornada.ok) {
+            console.error(`Erro ${status}:`, dataJornada.mensagem || 'Erro ao cadastrar');
+        } else {
+            console.log('Sucesso:', dataJornada.mensagem);
+        }
+
+        res.json(dataJornada.mensagem); // Retorna a resposta da API do Notion para o cliente
     } catch (error) {
         console.error('Erro ao criar página no Notion:', error);
         res.status(500).json({ error: 'Failed to create page in Notion' });
     }
 });
+
+app.get('/enviar-news', async (req, res) => { 
+    const retorno = await enviarNewsletter();
+    res.json(retorno);
+});
+
+require("isomorphic-fetch");
+const { Client } = require("@microsoft/microsoft-graph-client");
+const { ClientSecretCredential } = require("@azure/identity");
+
+// Autenticação com client_credentials
+const credential = new ClientSecretCredential(
+  process.env.TENANT_ID,
+  process.env.CLIENT_ID,
+  process.env.CLIENT_SECRET
+);
+
+// Criação do client do Microsoft Graph
+const graphClient = Client.initWithMiddleware({
+  authProvider: {
+    getAccessToken: async () => {
+      const tokenResponse = await credential.getToken("https://graph.microsoft.com/.default");
+      return tokenResponse.token;
+    },
+  },
+});
+
+app.get('/enviar-email-especifico', async (req, res) => { 
+  const email = req.query.email;
+  const htmlEnviar = await recuperarEmailNewsletterHtml();
+  const htmlFinal = htmlEnviar.replace("{{EMAIL}}", email);
+  const retornoEnvio = await enviarEmailMicrosoft(email, htmlFinal);
+  res.json(retornoEnvio);
+});
+
+async function enviarEmailMicrosoft(email, conteudoHtml) {
+  try {
+    const message = {
+      subject: "🎯 Confira as novas vagas de hoje",
+      body: {
+        contentType: "HTML",
+        content: conteudoHtml,
+      },
+      toRecipients: [
+        {
+          emailAddress: {
+            address: email,
+          },
+        },
+      ],
+    };
+
+    await graphClient
+      .api(`/users/${process.env.FROM_EMAIL}/sendMail`)
+      .post({ message });
+    const mensagemSucesso = "✅ E-mail enviado para => " + email;
+    console.log(mensagemSucesso);
+    return mensagemSucesso;
+  } catch (error) {
+    console.error("❌ Erro ao enviar o email:", error.message);
+    if (error.body) console.error("Detalhes:", error.body);
+    return error;
+  }
+}
 
 app.listen(3000, () => console.log('Proxy server running on http://localhost:3000'));

@@ -18,7 +18,7 @@ function showSnackbar(texto, tempoEmMilissegundos) {
     // Add the "show" class to DIV
     snackbar.className = "show";
 
-    // After 3 seconds, remove the show class from DIV
+    // remove the show class from DIV
     setTimeout(function () { snackbar.className = snackbar.className.replace("show", ""); }, tempoEmMilissegundos);
 }
 
@@ -45,7 +45,7 @@ function getJob() {
         let estado = '';
         if (tipoTrabalho != 'Remoto') {
             // LOCALIZAÃ‡ÃƒO
-            const localizacao = document.querySelectorAll('.t-black--light.mt2 > span:first-child')[0].innerText;
+            const localizacao = document.querySelectorAll('.t-black--light.mt2 > span > span')[0].innerText;
             const localizacaoSeparada = localizacao.split(',');
             cidade = localizacaoSeparada[0];
             estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
@@ -64,7 +64,7 @@ function getJob() {
     };
 
     const getRemotar = () => {
-        // DESCRIÇÃO VAGA 
+        // DESCRIÃ‡ÃƒO VAGA 
         const vaga = document.querySelectorAll('.job-title')[0].innerText;
 
         // EMPRESA
@@ -77,8 +77,30 @@ function getJob() {
         return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
 
+    const getGupy = () => {
+        // DESCRIÃ‡ÃƒO VAGA 
+        const vaga = document.querySelectorAll('.sc-ccd5d36-6.gdqSpl')[0].innerText
+
+        // EMPRESA
+        const hostname = window.location.hostname;
+        const empresa = hostname.split('.')[0];
+
+        const tipoTrabalho = document.querySelector('[alt="Remote work icon"]') ? "Remoto" : "Presencial / Hibrido";
+
+        let cidade = '';
+        let estado = '';
+        if (tipoTrabalho == 'Presencial / Hibrido') {
+            const localizacao = document.querySelectorAll('p.sc-ccd5d36-11.sc-ccd5d36-12.dmmNfl.guFMyc > span')[1].innerText;
+            const localizacaoSeparada = localizacao.split(' - ');
+            cidade = localizacaoSeparada[0];
+            estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
+        }
+
+        return { vaga, tipoTrabalho, cidade, estado, empresa };
+    };
+
     const getTelegramJornada = () => {
-        // DESCRIÇÃO VAGA 
+        // DESCRIÃ‡ÃƒO VAGA 
         const bodyIframe = document.getElementsByTagName('iframe')[0].contentWindow.document.body;
         console.log(bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i'))
         const vaga = bodyIframe.querySelectorAll('.tgme_widget_message_text.js-message_text > i')[3].innerHTML.replaceAll(": ", "");
@@ -93,13 +115,34 @@ function getJob() {
             tipoTrabalho = "Remoto"
             cidade = "";
         } else {
-            tipoTrabalho = 'Presencial/Híbrido';
+            tipoTrabalho = 'Presencial/Hï¿½brido';
             const localizacaoSeparada = cidade.split(',');
             cidade = localizacaoSeparada[0];
             estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
         }
 
         return { vaga, tipoTrabalho, cidade, estado, empresa, };
+    };
+
+    const getEmpregos = () => {
+        // DESCRIÃ‡ÃƒO VAGA 
+        const vaga = document.querySelector('h1[data-v-6ae09c5d]')?.innerText.trim();
+
+        // EMPRESA
+        const empresa = document.querySelector('a[data-v-14998509]')?.innerText.trim();
+
+        const tipoTrabalho = document.querySelector('span[data-v-0ab84f26]')?.innerText.trim();
+
+        let cidade = '';
+        let estado = '';
+        if (tipoTrabalho == 'Presencial') {
+            const localizacao = document.querySelector('h2[data-v-25353a49]')?.innerText.trim();
+            const localizacaoSeparada = localizacao.split('-');
+            cidade = localizacaoSeparada[0];
+            estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
+        }
+
+        return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
 
     const getEmpty = () => {
@@ -121,14 +164,57 @@ function getJob() {
         retorno = getTelegramJornada();
     } else if (linkPagina.includes("remotar.com.br")) {
         retorno = getRemotar();
+    } else if (linkPagina.includes("gupy.io")) {
+        retorno = getGupy();
+    } else if (linkPagina.includes("vagas.empregos.com.br")) {
+        retorno = getEmpregos();
     }
+    
 
     retorno.linkPagina = linkPagina;
-    retorno.tipoVaga = '';
+    retorno.tipoVaga = "";
     return retorno;
 };
 
 let retornoVaga = {};
+
+function removerAcentos(str) {
+    return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+}
+
+function selecionarTipoVaga(valor) {
+    const tipoVagaSelect = document.getElementById("tipoVaga");
+    for (let i = 0; i < tipoVagaSelect.options.length; i++) {
+        if (removerAcentos(tipoVagaSelect.options[i].value) === valor) {
+            tipoVagaSelect.selectedIndex = i;
+            const event = new Event('change');
+            tipoVagaSelect.dispatchEvent(event);
+            break;
+        }
+    }
+}
+
+function verificarSeVagaEhEstagioOuJunior(vaga) {
+    const vagaSemAcentos = removerAcentos(vaga.toLowerCase());
+
+    const opcoes = [
+        {
+            palavrasChave: ["estagio", "estagiario"],
+            valorSelect: "Estagio"
+        },
+        {
+            palavrasChave: ["jr", "junior"],
+            valorSelect: "Junior"
+        }
+    ];
+
+    for (const opcao of opcoes) {
+        if (opcao.palavrasChave.some(palavra => vagaSemAcentos.includes(palavra))) {
+            selecionarTipoVaga(opcao.valorSelect);
+            break;
+        }
+    }
+}
 
 function showJob(retorno, esconderMontar) {
     retornoVaga = retorno;
@@ -140,6 +226,7 @@ function showJob(retorno, esconderMontar) {
             hide('camposMontarJob');
         }
     }
+    verificarSeVagaEhEstagioOuJunior(retornoVaga.vaga);
 }
 
 document.getElementById("btnSendTelegram").addEventListener("click", () => {
@@ -169,10 +256,11 @@ document.getElementById("btnSendTelegram").addEventListener("click", () => {
             const message_thread_id = data.result.message_thread_id;
             const message_id = data.result.message_id;
             const urlTelegram = `https://t.me/jornadati/${message_thread_id}/${message_id}`;
-            
-            retornoVaga.linkPagina = urlTelegram;
+
+            retornoVaga.linkTelegram = urlTelegram;
             mostrarParaPostarNaPlanilha();
-            showSnackbar("Mensagem enviada com sucesso ao Telegram!", 2000);
+            showSnackbar("Mensagem enviada com sucesso ao Telegram!", 1000);
+            enviarAoNotion();
         })
         .catch(error => {
             console.error('Error sending message:', error);
@@ -180,6 +268,10 @@ document.getElementById("btnSendTelegram").addEventListener("click", () => {
 });
 
 document.getElementById("btnEnviarNotion").addEventListener("click", () => {
+    enviarAoNotion();
+});
+
+function enviarAoNotion(){
     fetch(`${ENV.NOTION_URL}`, {
         method: 'POST',
         headers: {
@@ -189,10 +281,10 @@ document.getElementById("btnEnviarNotion").addEventListener("click", () => {
     })
         .then(response => response.json())
         .then(data => {
-            showSnackbar("Vaga enviada com sucesso ao Notion!", 2000);
+            showSnackbar("Vaga enviada com sucesso ao Notion!", 1000);
         })
         .catch(err => console.error(err));
-});
+}
 
 
 
@@ -200,7 +292,7 @@ function prepararParaPostarTelegram() {
     const textoParaOTelegram = `Titulo: ${retornoVaga.vaga}
 Empresa: ${retornoVaga.empresa}
 Local: ${retornoVaga.tipoTrabalho} ${retornoVaga.cidade} ${retornoVaga.estado}
-Tipo De Vaga: ${retornoVaga.tipoVaga}
+Tipo De Vaga: #${retornoVaga.tipoVaga}
 
 Link para a vaga ${retornoVaga.linkPagina}`;
 
@@ -255,7 +347,7 @@ async function fetchEstados() {
     }
 }
 
-// Função para buscar cidades de um estado
+// FunÃ§Ã£o para buscar cidades de um estado
 async function fetchCidades(estadoSigla) {
     try {
 
@@ -264,7 +356,7 @@ async function fetchCidades(estadoSigla) {
         const cidades = await response.json();
         cidades.sort((a, b) => a.nome.localeCompare(b.nome)); // Ordena por nome
 
-        cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>'; // Reseta as opções
+        cidadeSelect.innerHTML = '<option value="">Selecione uma cidade</option>'; // Reseta as opï¿½ï¿½es
 
         cidades.forEach(cidade => {
             const option = document.createElement('option');
@@ -288,8 +380,17 @@ document.getElementById('estado').addEventListener('change', () => {
     }
 });
 
+document.getElementById('tipoTrabalho').addEventListener('change', () => {
+    const tipoTrabalhoSelect = document.getElementById('tipoTrabalho');
+    const tipo = tipoTrabalhoSelect.value;
+    if (tipo == 'Remoto') {
+        document.getElementById("estado").selectedIndex = 0;
+        document.getElementById("cidade").selectedIndex = 0;
+    } 
+});
+
 window.onload = function () {
-    // Carrega os estados ao carregar a página
+    // Carrega os estados ao carregar a pï¿½gina
     fetchEstados();
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
