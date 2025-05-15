@@ -51,7 +51,7 @@ async function enviarNewsletter() {
 }
   
 async function recuperarEmailNewsletterHtml() {
-  const respostaTemplate = await fetch(`ver_vagas_dia_email.php`, {
+  const respostaTemplate = await fetch(`${process.env.URL_JORNADA}/ver_vagas_dia_email.php`, {
     method: 'GET',
   });
   return await respostaTemplate.text();
