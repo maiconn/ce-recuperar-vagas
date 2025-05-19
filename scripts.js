@@ -216,7 +216,7 @@ function verificarSeVagaEhEstagioOuJunior(vaga) {
     }
 }
 
-function showJob(retorno, esconderMontar) {
+function showJob(retorno, esconderMontar, selecionarAutomatico) {
     retornoVaga = retorno;
     if (retorno.vaga == '') {
         show('camposMontarJob');
@@ -226,7 +226,9 @@ function showJob(retorno, esconderMontar) {
             hide('camposMontarJob');
         }
     }
-    verificarSeVagaEhEstagioOuJunior(retornoVaga.vaga);
+    if(selecionarAutomatico) {
+        verificarSeVagaEhEstagioOuJunior(retornoVaga.vaga);
+    }
 }
 
 document.getElementById("btnSendTelegram").addEventListener("click", () => {
@@ -320,13 +322,13 @@ document.getElementById("btnMontarJob").addEventListener("click", () => {
     const linkPagina = document.getElementById("txtLink").value;
 
     const retorno = { vaga, tipoTrabalho, cidade, estado, empresa, linkPagina, tipoVaga };
-    showJob(retorno, false);
+    showJob(retorno, false, true);
 });
 
 document.getElementById('tipoVaga').addEventListener('change', function (event) {
     const selectedValue = event.target.value;
     retornoVaga.tipoVaga = selectedValue;
-    showJob(retornoVaga, false);
+    showJob(retornoVaga, false, false);
 });
 
 async function fetchEstados() {
@@ -398,6 +400,6 @@ window.onload = function () {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: getJob,
-        }).then((textos) => showJob(textos[0].result, true));
+        }).then((textos) => showJob(textos[0].result, true, true));
     });
 };
