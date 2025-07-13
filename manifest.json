@@ -9,7 +9,8 @@
     },
     "permissions": [
         "scripting",
-        "activeTab"
+        "activeTab",
+        "tab"
     ],
     "host_permissions": ["https://api.notion.com/*"]
 }

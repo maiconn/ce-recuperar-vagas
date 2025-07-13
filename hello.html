@@ -47,10 +47,13 @@
     </select><br>
     <div id="dadosEnviar" class="hidden">
         <textarea id="txtTelegram" rows="7"></textarea>
-        <button id="btnSendTelegram">Mandar Telegram / Notion / Jornada</button>
-        <input type="text" id="txtPlanilha" />
+        <button id="btnSendTelegram" style="width: 100%; height: 50px;">Mandar Telegram / Notion / Jornada</button>
+        <input type="text" id="txtPlanilha" class="hidden"/>
     </div>
     <button id="btnEnviarNotion" class="hidden">Enviar Notion</button>
+    <br>
+    <label for="fecharGuia">Fechar Guia</label>
+    <input type="checkbox" id="fecharGuia" style="width: auto;" checked/>
 
     <!-- The actual snackbar -->
     <div id="snackbar"></div>

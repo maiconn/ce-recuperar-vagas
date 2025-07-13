@@ -126,18 +126,18 @@ function getJob() {
 
     const getEmpregos = () => {
         // DESCRIÇÃO VAGA 
-        const vaga = document.querySelector('h1[data-v-6ae09c5d]')?.innerText.trim();
+        const vaga = document.querySelector('h1[data-v-76d8c702]')?.innerText.trim();
 
         // EMPRESA
-        const empresa = document.querySelector('a[data-v-14998509]')?.innerText.trim();
+        const empresa = document.querySelector('a[data-v-76d8c702]')?.innerText.trim();
 
-        const tipoTrabalho = document.querySelector('span[data-v-0ab84f26]')?.innerText.trim();
+        const tipoTrabalho = document.querySelectorAll('h3.text-sm.text-cinza90.text-center')[1].innerText;
 
         let cidade = '';
         let estado = '';
         if (tipoTrabalho == 'Presencial') {
-            const localizacao = document.querySelector('h2[data-v-25353a49]')?.innerText.trim();
-            const localizacaoSeparada = localizacao.split('-');
+            const localizacao = document.querySelectorAll('h3.text-sm.text-cinza90.text-center')[0].innerText;
+            const localizacaoSeparada = localizacao.split(', ');
             cidade = localizacaoSeparada[0];
             estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
         }
@@ -166,7 +166,7 @@ function getJob() {
         retorno = getRemotar();
     } else if (linkPagina.includes("gupy.io")) {
         retorno = getGupy();
-    } else if (linkPagina.includes("vagas.empregos.com.br")) {
+    } else if (linkPagina.includes("empregos.com.br")) {
         retorno = getEmpregos();
     }
     
@@ -203,12 +203,20 @@ function verificarSeVagaEhEstagioOuJunior(vaga) {
             valorSelect: "Estagio"
         },
         {
-            palavrasChave: ["jr", "junior"],
+            palavrasChave: ["suporte", "assistente"],
+            valorSelect: "Suporte"
+        },
+        {
+            palavrasChave: ["qa", "qualidade"],
+            valorSelect: "Teste"
+        },
+        {
+            palavrasChave: ["jr", "junior", "software engineer"],
             valorSelect: "Junior"
         }
     ];
 
-    for (const opcao of opcoes) {
+    for (const opcao of opcoes) {  
         if (opcao.palavrasChave.some(palavra => vagaSemAcentos.includes(palavra))) {
             selecionarTipoVaga(opcao.valorSelect);
             break;
@@ -273,6 +281,17 @@ document.getElementById("btnEnviarNotion").addEventListener("click", () => {
     enviarAoNotion();
 });
 
+function limparCampos(){
+    document.getElementById("txtTitulo").value = "";
+    document.getElementById("txtEmpresa").value = "";
+    document.getElementById("tipoTrabalho").value = "Remoto";
+    document.getElementById("estado").value = "";
+    document.getElementById("cidade").value = "";
+    document.getElementById("txtLink").value = "";
+    document.getElementById("tipoVaga").value = "";
+    hide("dadosEnviar");
+}
+
 function enviarAoNotion(){
     fetch(`${ENV.NOTION_URL}`, {
         method: 'POST',
@@ -284,11 +303,18 @@ function enviarAoNotion(){
         .then(response => response.json())
         .then(data => {
             showSnackbar("Vaga enviada com sucesso ao Notion!", 1000);
+            if (document.getElementById('fecharGuia').checked) { 
+                chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                    if (tabs.length > 0) {
+                        chrome.tabs.remove(tabs[0].id);
+                    }
+                });
+            } else {
+                limparCampos();
+            }            
         })
         .catch(err => console.error(err));
 }
-
-
 
 function prepararParaPostarTelegram() {
     const textoParaOTelegram = `Titulo: ${retornoVaga.vaga}

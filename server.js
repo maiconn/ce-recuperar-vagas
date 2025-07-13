@@ -13,38 +13,45 @@ app.use((req, res, next) => {
     next();
 });
 
-async function enviarNewsletter() {
+async function enviarNewsletter(idInicial) {
     const url = `${process.env.URL_JORNADA}/buscar_emails.php`;
   
     try {
       const resposta = await fetch(url);
       const json = await resposta.json();
+
+      if (idInicial) {
+        json.emails = json.emails.filter(item => item.id >= idInicial);
+      }
   
       if (!json.emails || json.emails.length === 0) {
         console.log('Nenhum e-mail ativo encontrado.');
         return;
       }
-  
-      console.log(`Encontrados ${json.total} e-mails. Iniciando envio...`);
+
+      console.log(`Encontrados ${json.emails.length} e-mails. Iniciando envio...`);
 
       const htmlEnviar = await recuperarEmailNewsletterHtml();
 
       const total = json.emails.length;
       let processados = 0;
   
+      const resultado = [];
       for (const item of json.emails) {
           //const retornoEnvio = await enviarEmailPorIdHostinger(item.id);
         const htmlFinal = htmlEnviar.replace("{{EMAIL}}", item.email);
         const retornoEnvio = await enviarEmailMicrosoft(item.email, htmlFinal);
-        item.retornoEnvio = retornoEnvio;
 
         processados++;
         const porcentagem = ((processados / total) * 100).toFixed(2);
         console.log(`[(${processados}/${total})${porcentagem}%] Resultado do envio para ID ${item.id}:`, retornoEnvio);
+        if (!retornoEnvio.sucesso){
+          resultado.push({item, retorno:retornoEnvio.retorno});
+        }
       }
   
       console.log('Processo de envio finalizado.');
-      return json;
+      return resultado;
     } catch (erro) {
       console.error('Erro ao buscar e-mails:', erro);
     }
@@ -142,7 +149,8 @@ app.post('/notion-proxy', async (req, res) => {
 });
 
 app.get('/enviar-news', async (req, res) => { 
-    const retorno = await enviarNewsletter();
+    const idInicial = req.query.idInicial;
+    const retorno = await enviarNewsletter(idInicial);
     res.json(retorno);
 });
 
@@ -197,11 +205,17 @@ async function enviarEmailMicrosoft(email, conteudoHtml) {
       .post({ message });
     const mensagemSucesso = "✅ E-mail enviado para => " + email;
     console.log(mensagemSucesso);
-    return mensagemSucesso;
+    return { 
+      retorno: mensagemSucesso, 
+      sucesso: true 
+    };
   } catch (error) {
     console.error("❌ Erro ao enviar o email:", error.message);
     if (error.body) console.error("Detalhes:", error.body);
-    return error;
+    return { 
+      retorno: error,
+      sucesso: false 
+    };
   }
 }
 
