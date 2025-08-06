@@ -156,10 +156,13 @@ function getJob() {
         return { vaga, tipoTrabalho, cidade, estado, empresa, tipoVaga };
     };
 
-    const linkPagina = window.location.href;
+    let linkPagina = window.location.href;
     let retorno = getEmpty();
     if (linkPagina.includes("linkedin.com")) {
         retorno = getLinkedin();
+        const url = new URL(linkPagina);
+        const cleanUrl = url.origin + url.pathname;
+        linkPagina = cleanUrl;
     } else if (linkPagina.includes("t.me/jornadati")) {
         retorno = getTelegramJornada();
     } else if (linkPagina.includes("remotar.com.br")) {
@@ -199,7 +202,7 @@ function verificarSeVagaEhEstagioOuJunior(vaga) {
 
     const opcoes = [
         {
-            palavrasChave: ["estagio", "estagiario"],
+            palavrasChave: ["estagio", "estagiario", "estagiaria"],
             valorSelect: "Estagio"
         },
         {
@@ -207,7 +210,7 @@ function verificarSeVagaEhEstagioOuJunior(vaga) {
             valorSelect: "Suporte"
         },
         {
-            palavrasChave: ["qa", "qualidade"],
+            palavrasChave: ["qa", "qualidade", "testes", "testador", "teste"],
             valorSelect: "Teste"
         },
         {
