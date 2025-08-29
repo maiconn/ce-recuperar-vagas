@@ -28,16 +28,25 @@ function mostrarParaPostarNaPlanilha() {
     txtPlanilha.value = textoParaPlanilha;
 }
 
+function removerAcentos(str) {
+    return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+}
+
 function getJob() {
     const getLinkedin = () => {
         // DESCRIÇÃO VAGA 
         const vaga = document.querySelectorAll('.t-24.job-details-jobs-unified-top-card__job-title > h1:first-child')[0].innerText;
 
         // TIPO DE TRABALHO (REMOTO PRESENCIAL E TAL...)
-        let tipoTrabalho = ""
+        let tipoTrabalho = "";
         try {
-            tipoTrabalho = document.querySelectorAll('.ui-label.ui-label--accent-3.text-body-small > span:first-child')[0].innerText;
-        } catch {
+            const modalidadesValidas = ["Remoto", "Hibrido", "Presencial"];
+            const spans = document.querySelectorAll('.tvm__text.tvm__text--low-emphasis');
+            tipoTrabalho = Array.from(spans)
+                            .map(el => el.textContent.trim().normalize("NFD").replace(/\p{Diacritic}/gu, ""))
+                            .find(txt => modalidadesValidas.some(m => txt.includes(m)));
+        } catch (e){
+            console.log(e);
             tipoTrabalho = "Presencial"
         }
 
@@ -58,7 +67,6 @@ function getJob() {
         } catch {
             empresa = document.querySelectorAll('.job-details-jobs-unified-top-card__company-name')[0].innerText;
         }
-
 
         return { vaga, tipoTrabalho, cidade, estado, empresa };
     };
@@ -115,7 +123,7 @@ function getJob() {
             tipoTrabalho = "Remoto"
             cidade = "";
         } else {
-            tipoTrabalho = 'Presencial/H�brido';
+            tipoTrabalho = 'Presencial/Híbrido';
             const localizacaoSeparada = cidade.split(',');
             cidade = localizacaoSeparada[0];
             estado = localizacaoSeparada[1] == undefined ? "" : localizacaoSeparada[1];
@@ -180,10 +188,6 @@ function getJob() {
 };
 
 let retornoVaga = {};
-
-function removerAcentos(str) {
-    return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
-}
 
 function selecionarTipoVaga(valor) {
     const tipoVagaSelect = document.getElementById("tipoVaga");
