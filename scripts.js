@@ -45,6 +45,9 @@ function getJob() {
             tipoTrabalho = Array.from(spans)
                             .map(el => el.textContent.trim().normalize("NFD").replace(/\p{Diacritic}/gu, ""))
                             .find(txt => modalidadesValidas.some(m => txt.includes(m)));
+            if(!tipoTrabalho) {
+                tipoTrabalho = "Presencial";
+            }
         } catch (e){
             console.log(e);
             tipoTrabalho = "Presencial"
